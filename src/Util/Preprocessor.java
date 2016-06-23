@@ -1,9 +1,12 @@
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.lang.IllegalArgumentException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Random;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,12 +18,16 @@ class Preprocessor {
     
     List<UserMovieInstance> userMovie = readDataFromCSV("..\\..\\dataset\\test.csv");
     List<UserMoviesInstance> userMovies = joinUser(userMovie);
+    TrainTestPair abc = splitData(userMovies,0.001,1);
     
-    for(UserMoviesInstance instance : userMovies) {
+    for(UserMoviesInstance instance : abc.getTrainingData()) {
       System.out.println(instance);
     }
   }
-  
+  /*
+  * This is a method to read data from MovieTweeting.csv and record with
+  * UserMovieInstances
+  */
   private static List<UserMovieInstance> readDataFromCSV(String fileName) {
     List<UserMovieInstance> data = new ArrayList();
     Path pathToFile = Paths.get(fileName);
@@ -28,6 +35,7 @@ class Preprocessor {
     try (BufferedReader br = Files.newBufferedReader(pathToFile,
       StandardCharsets.US_ASCII)) {
       
+      //read the first line (attributes)
       String line = br.readLine();
       line = br.readLine();
       while (line != null) {
@@ -42,7 +50,9 @@ class Preprocessor {
     
     return data;
   }
-  
+  /*
+  * This is a helper method to create UserMovieInstance for readDataFromCSV
+  */
   private static UserMovieInstance createInstance(String[] metadata) {
     int user = Integer.parseInt(metadata[0]);
     int movie = Integer.parseInt(metadata[1]);
@@ -50,7 +60,9 @@ class Preprocessor {
     
     return new UserMovieInstance(user, movie, rating);
   }
-  
+  /*
+  * This is a method to join UserMovieInstances to UserMoviesInstance
+  */
   private static List<UserMoviesInstance> joinUser(List<UserMovieInstance> data) {
     Map<Integer, UserMoviesInstance> reducedUserMap = 
       data.stream()
@@ -59,8 +71,36 @@ class Preprocessor {
     List<UserMoviesInstance> reducedUserList = new ArrayList<UserMoviesInstance>(reducedUserMap.values());
     return reducedUserList;
   }
+  /*
+  * This is a method to split data to training set and testing set.
+  * @param splitPercentage: a value between 0 and 1, to partition 
+  *   data with that proportion for traing data, and the rest for testing data
+  * @param seed: a number for random seed to reproduce partition result
+  */
+  private static TrainTestPair splitData(List<UserMoviesInstance> data, double splitPercentage, long seed) {
+    if(splitPercentage > 1 || splitPercentage < 0) {
+      throw new IllegalArgumentException("splitPercentage must between 0 and 1");
+    }
+    //randomize the list
+    Collections.shuffle(data,new Random(seed));
+    
+    ArrayList<UserMoviesInstance> train = new ArrayList<UserMoviesInstance>();
+    ArrayList<UserMoviesInstance> test = new ArrayList<UserMoviesInstance>();
+    
+    // split the data to training part
+    int trainSize = (int)(data.size()*splitPercentage);
+    train.addAll(data.subList(0, trainSize));
+    // split the data to testing part
+    test.addAll(data.subList(trainSize, data.size()));
+    
+    return new TrainTestPair(train, test);
+  }
 }
-
+/*
+* The class UserMovieInstance is used to record the data import from
+* MovieTweeting, whose format is:
+*   user-movie-rating
+*/
 class UserMovieInstance {
   private int user;
   private int movie;
@@ -89,22 +129,36 @@ class UserMovieInstance {
     return "U:" + user + "\tM:" + movie + "\tR:" + rating;
   }
 }
-
+/*
+* The class UserMoviesInstance record the data to use in weka sparse instance.
+* And the format is:
+*   user-movies[]-ratings[]
+*/
 class UserMoviesInstance {
   private int user;
   private List<Integer> movies;
   private List<Integer> ratings;
   
+  /*
+  * This is a constructor for valueMapper in Collectors.toMap to join UserMovieInstances.
+  */
   public UserMoviesInstance(UserMovieInstance usermovieinstance) {
     this.user = usermovieinstance.getUser();
     this.movies = new ArrayList<>(Arrays.asList(usermovieinstance.getMovie()));
     this.ratings = new ArrayList<>(Arrays.asList(usermovieinstance.getRating()));
   }
   
+  /*
+  * This is a helper method for mergeFunction in Collectors.toMap to join UserMovieInstances.
+  */ 
   public UserMoviesInstance merge(UserMoviesInstance that) {
     movies.addAll(that.getMovies());
     ratings.addAll(that.getRatings());
     return this;
+  }
+  
+  public int getUser() {
+    return this.user;
   }
   
   public List<Integer> getMovies() {
@@ -127,5 +181,23 @@ class UserMoviesInstance {
       s += Integer.toString(rating) + "\t";
     }
     return s;
+  }
+}
+
+class TrainTestPair {
+  private List<UserMoviesInstance> train;
+  private List<UserMoviesInstance> test;
+  
+  public TrainTestPair(List<UserMoviesInstance> train, List<UserMoviesInstance> test) {
+    this.train = train;
+    this.test = test;
+  }
+  
+  public List<UserMoviesInstance> getTrainingData() {
+    return this.train;
+  }
+  
+  public List<UserMoviesInstance> getTestingData() {
+    return this.test;
   }
 }
