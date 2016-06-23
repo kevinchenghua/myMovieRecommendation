@@ -13,22 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-class Preprocessor {
-  public static void main(String [] args){
-    
-    List<UserMovieInstance> userMovie = readDataFromCSV("..\\..\\dataset\\test.csv");
-    List<UserMoviesInstance> userMovies = joinUser(userMovie);
-    TrainTestPair abc = splitData(userMovies,0.001,1);
-    
-    for(UserMoviesInstance instance : abc.getTrainingData()) {
-      System.out.println(instance);
-    }
-  }
+public class Preprocessor {
   /*
   * This is a method to read data from MovieTweeting.csv and record with
   * UserMovieInstances
   */
-  private static List<UserMovieInstance> readDataFromCSV(String fileName) {
+  public static List<UserMovieInstance> readDataFromCSV(String fileName) {
     List<UserMovieInstance> data = new ArrayList();
     Path pathToFile = Paths.get(fileName);
     
@@ -63,7 +53,7 @@ class Preprocessor {
   /*
   * This is a method to join UserMovieInstances to UserMoviesInstance
   */
-  private static List<UserMoviesInstance> joinUser(List<UserMovieInstance> data) {
+  public static List<UserMoviesInstance> joinUser(List<UserMovieInstance> data) {
     Map<Integer, UserMoviesInstance> reducedUserMap = 
       data.stream()
           .collect(
@@ -77,7 +67,7 @@ class Preprocessor {
   *   data with that proportion for traing data, and the rest for testing data
   * @param seed: a number for random seed to reproduce partition result
   */
-  private static TrainTestPair splitData(List<UserMoviesInstance> data, double splitPercentage, long seed) {
+  public static TrainTestPair splitData(List<UserMoviesInstance> data, double splitPercentage, long seed) {
     if(splitPercentage > 1 || splitPercentage < 0) {
       throw new IllegalArgumentException("splitPercentage must between 0 and 1");
     }
