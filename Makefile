@@ -1,5 +1,5 @@
 JCC = javac
-CP = ./classes
+CP = ./classes/
 JFLAGS = -g -d $(CP) -cp lib/weka.jar
 JVM = java
 
@@ -13,7 +13,7 @@ compile:
 	$(JCC) $(JFLAGS) $(SRC)
 
 run:
-	$(JVM) -cp $(CP) $(MAIN)
+	$(JVM) -cp $(CP);lib/weka.jar $(MAIN)
 clean:
-	$(RM) $(CP)*.class 
+	del classes\*.class 
 

@@ -11,7 +11,9 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.stream.Collectors;
+
 
 public class Preprocessor {
   /*
@@ -126,6 +128,7 @@ class UserMovieInstance {
 */
 class UserMoviesInstance {
   private int user;
+  private List<MovieRatingPair> pairs;
   private List<Integer> movies;
   private List<Integer> ratings;
   
@@ -134,6 +137,7 @@ class UserMoviesInstance {
   */
   public UserMoviesInstance(UserMovieInstance usermovieinstance) {
     this.user = usermovieinstance.getUser();
+    this.pairs = new ArrayList<>(Arrays.asList(new MovieRatingPair(usermovieinstance.getMovie(), usermovieinstance.getRating())));
     this.movies = new ArrayList<>(Arrays.asList(usermovieinstance.getMovie()));
     this.ratings = new ArrayList<>(Arrays.asList(usermovieinstance.getRating()));
   }
@@ -142,13 +146,32 @@ class UserMoviesInstance {
   * This is a helper method for mergeFunction in Collectors.toMap to join UserMovieInstances.
   */ 
   public UserMoviesInstance merge(UserMoviesInstance that) {
-    movies.addAll(that.getMovies());
-    ratings.addAll(that.getRatings());
+    pairs.addAll(that.getPairs());
+    pairs.sort(new Comparator<MovieRatingPair>() {
+      @Override
+      public int compare(MovieRatingPair first, MovieRatingPair second) {
+        if(first.getMovie() > second.getMovie())
+          return 1;
+        else if(first.getMovie() < second.getMovie()) 
+          return -1;
+        return 0;
+      }
+    });
+    movies = new ArrayList<Integer>();
+    ratings = new ArrayList<Integer>();
+    for(MovieRatingPair pair : pairs) {
+      movies.add(pair.getMovie());
+      ratings.add(pair.getRating());
+    }
     return this;
   }
   
   public int getUser() {
     return this.user;
+  }
+  
+  public List<MovieRatingPair> getPairs() {
+    return this.pairs;
   }
   
   public List<Integer> getMovies() {
@@ -157,6 +180,24 @@ class UserMoviesInstance {
   
   public List<Integer> getRatings() {
     return this.ratings;
+  }
+  
+  public int[] getMoviesIntArray() {
+    int[] moviesArray = new int[movies.size()+1];
+    moviesArray[0] = 0;
+    for (int i = 0; i < movies.size(); i++) {
+      moviesArray[i+1] = movies.get(i).intValue();
+    }
+    return moviesArray;
+  }
+  
+  public double[] getRatingsDoubleArray() {
+    double[] ratingsArray = new double[ratings.size()+1];
+    ratingsArray[0] = user;
+    for (int i = 0; i < ratings.size(); i++) {
+      ratingsArray[i+1] = ratings.get(i).doubleValue();
+    }
+    return ratingsArray;
   }
   
   @Override
@@ -171,6 +212,24 @@ class UserMoviesInstance {
       s += Integer.toString(rating) + "\t";
     }
     return s;
+  }
+  
+  private class MovieRatingPair {
+    private int movie;
+    private int rating;
+    
+    public MovieRatingPair(int movie, int rating) {
+      this.movie = movie;
+      this.rating = rating;
+    }
+    
+    public int getMovie() {
+      return this.movie;
+    }
+    
+    public int getRating() {
+      return this.rating;
+    }
   }
 }
 
